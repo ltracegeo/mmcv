@@ -14,7 +14,14 @@ def parse_version_info(version_str: str, length: int = 4) -> tuple:
             (1, 3, 0, 0, 0, 0), and "2.0.0rc1" is parsed into
             (2, 0, 0, 0, 'rc', 1) (when length is set to 4).
     """
-    from packaging.version import parse
+    try:
+        from packaging.version import parse
+    except ImportError:
+        try:
+            from setuptools.extern.packaging.version import parse
+        except ImportError:
+            from pkg_resources import parse_version as parse
+
     version = parse(version_str)
     assert version.release, f'failed to parse version {version_str}'
     release = list(version.release)

@@ -10,7 +10,16 @@ import torch
 if torch.__version__ != 'parrots':
 
     def load_ext(name, funcs):
-        ext = importlib.import_module('mmcv.' + name)
+        try:
+            ext = importlib.import_module('mmcv.' + name)
+        except ImportError as e:
+            if name == '_ext':
+                raise ImportError(
+                    f'MMCV C++ extension "{name}" is not compiled. '
+                    'Please make sure you have installed mmcv properly. '
+                    'See https://mmcv.readthedocs.io/en/latest/get_started/installation.html '
+                    'for installation instructions.') from e
+            raise e
         for fun in funcs:
             assert hasattr(ext, fun), f'{fun} miss in module {name}'
         return ext
@@ -68,5 +77,5 @@ else:
 
 
 def check_ops_exist() -> bool:
-    ext_loader = pkgutil.find_loader('mmcv._ext')
-    return ext_loader is not None
+    import importlib.util
+    return importlib.util.find_spec('mmcv._ext') is not None

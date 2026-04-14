@@ -1,0 +1,30 @@
+# Dockerfile for Linux build
+FROM almalinux:8
+
+# Install Development Tools, git and python
+RUN dnf install -y dnf-plugins-core && \
+    dnf config-manager --set-enabled powertools && \
+    dnf groupinstall -y "Development Tools" && \
+    dnf install -y gcc-toolset-12 git python312 python3.12-devel curl ninja-build && \
+    ln -s /usr/bin/python3.12 /usr/bin/python
+
+# Install pip for python 3.12
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+    python get-pip.py && \
+    rm get-pip.py
+
+# Create a workspace directory
+WORKDIR /workspace
+
+# Install python dependencies from requirements files in the mounted volume
+# We copy only the requirements to leverage docker layer caching
+COPY requirements.txt .
+COPY requirements/ ./requirements
+RUN python -m pip install --upgrade pip && \
+    pip install -r requirements.txt && \
+    pip install -r requirements/build.txt && \
+    pip install wheel psutil
+
+# The source code will be mounted at /workspace
+# The default command will be to build the wheel
+CMD ["sh", "-c", "source /opt/rh/gcc-toolset-12/enable && CC=gcc CXX=g++ CUDAHOSTCXX=g++ pip wheel . --no-build-isolation --wheel-dir=./dist -v"]

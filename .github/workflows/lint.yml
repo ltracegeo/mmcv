@@ -10,19 +10,19 @@ jobs:
   lint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.7
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.7
+          python-version: 3.12
       - name: Install pre-commit hook
         run: |
-          pip install pre-commit
+          python -m pip install -U pre-commit
           pre-commit install
       - name: Linting
         run: pre-commit run --all-files
       - name: Format c/cuda codes with clang-format
-        uses: DoozyX/clang-format-lint-action@v0.11
+        uses: DoozyX/clang-format-lint-action@v0.17
         with:
           source: mmcv/ops/csrc
           extensions: h,c,cpp,hpp,cu,cuh

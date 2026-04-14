@@ -1,0 +1,23 @@
+# escape=`
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+
+# Install Chocolatey, Python, and VS 2019 Build Tools
+RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+RUN choco install python --version=3.12.3 -y
+RUN choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" -y
+
+ENV PATH="C:\Python312;C:\Python312\Scripts;%PATH%"
+
+SHELL ["cmd", "/S", "/C", "C:\\PROGRA~2\\MICROS~1\\2019\\BUILDT~1\\Common7\\Tools\\VsDevCmd.bat", "&&"]
+
+WORKDIR C:\workspace
+
+COPY requirements.txt .
+COPY requirements/ ./requirements
+RUN python -m pip install --upgrade pip
+RUN pip install -r requirements.txt
+RUN pip install -r requirements/build.txt
+RUN pip install wheel
+
+# Note: Using default MSVC compiler.
+CMD ["pip", "wheel", ".", "--no-build-isolation", "--wheel-dir=./dist", "-v"]

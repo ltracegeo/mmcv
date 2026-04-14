@@ -2,7 +2,32 @@ import glob
 import os
 import platform
 import re
-from pkg_resources import DistributionNotFound, get_distribution, parse_version
+try:
+    from packaging.version import parse as parse_version
+except ImportError:
+    try:
+        from setuptools.extern.packaging.version import parse as parse_version
+    except ImportError:
+        try:
+            from pkg_resources import parse_version
+        except ImportError:
+            # A simple fallback for parse_version if packaging is not installed.
+            # It might not handle all edge cases, but for most version strings it's fine.
+            def parse_version(v):
+                return [
+                    int(x) if x.isdigit() else x
+                    for x in re.split(r'(\d+)', v)
+                    if x
+                ]
+
+try:
+    from importlib.metadata import distribution, PackageNotFoundError
+    def get_distribution(name):
+        return distribution(name)
+    DistributionNotFound = PackageNotFoundError
+except ImportError:
+    from pkg_resources import get_distribution, DistributionNotFound
+
 from setuptools import find_packages, setup
 
 EXT_TYPE = ''
@@ -139,6 +164,17 @@ def get_extensions():
 
     if os.getenv('MMCV_WITH_OPS', '1') == '0':
         return extensions
+
+    if EXT_TYPE == '':
+        # This occurs when torch is not available in the build environment.
+        # In Python 3.12, this is usually due to build isolation.
+        raise RuntimeError(
+            'PyTorch is not found in the build environment. '
+            'MMCV C++ extensions (ops) require PyTorch to be built. '
+            'If you want to install mmcv-lite (without ops), set MMCV_WITH_OPS=0. '
+            'Otherwise, ensure torch is available in your build environment. '
+            'If installing from source, you may need --no-build-isolation '
+            'if torch is only installed in your target environment.')
 
     if EXT_TYPE == 'parrots':
         ext_name = 'mmcv._ext'
@@ -370,10 +406,23 @@ def get_extensions():
               and torch.backends.mps.is_available()) or os.getenv(
                   'FORCE_MPS', '0') == '1':
             # objc compiler support
-            from distutils.unixccompiler import UnixCCompiler
-            if '.mm' not in UnixCCompiler.src_extensions:
-                UnixCCompiler.src_extensions.append('.mm')
-                UnixCCompiler.language_map['.mm'] = 'objc'
+            try:
+                import setuptools.dist
+                from setuptools.command.build_ext import build_ext
+            except ImportError:
+                # older setuptools
+                pass
+
+            # In recent setuptools/distutils, we might need to modify
+            # how .mm files are handled differently if this fails
+            try:
+                from distutils.unixccompiler import UnixCCompiler
+                if '.mm' not in UnixCCompiler.src_extensions:
+                    UnixCCompiler.src_extensions.append('.mm')
+                    UnixCCompiler.language_map['.mm'] = 'objc'
+            except (ImportError, AttributeError):
+                # Handle cases where distutils is not available or doesn't have the expected attributes
+                pass
 
             define_macros += [('MMCV_WITH_MPS', None)]
             extra_compile_args = {}
@@ -461,6 +510,8 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Topic :: Utilities',
     ],
     url='https://github.com/open-mmlab/mmcv',

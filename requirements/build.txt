@@ -1,1 +1,3 @@
 pytest-runner
+torch @ https://download.pytorch.org/whl/cu121/torch-2.5.1%2Bcu121-cp312-cp312-win_amd64.whl ; platform_system == "Windows"
+torch @ https://download.pytorch.org/whl/cu121/torch-2.5.1%2Bcu121-cp312-cp312-linux_x86_64.whl ; platform_system == "Linux"
