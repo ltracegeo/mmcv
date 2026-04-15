@@ -177,7 +177,8 @@ class KeyMapper(BaseTransform):
     """
 
     def __init__(self,
-                 transforms: Union[Transform, List[Transform]] = None,
+                 transforms: Optional[Union[Transform,
+                                            List[Transform]]] = None,
                  mapping: Optional[Dict] = None,
                  remapping: Optional[Dict] = None,
                  auto_remap: Optional[bool] = None,
@@ -619,11 +620,14 @@ class RandomApply(BaseTransform):
     """
 
     def __init__(self,
-                 transforms: Union[Transform, List[Transform]],
+                 transforms: Optional[Union[Transform,
+                                            List[Transform]]] = None,
                  prob: float = 0.5):
 
         super().__init__()
         self.prob = prob
+        if transforms is None:
+            transforms = []
         self.transforms = Compose(transforms)
 
     def __iter__(self):

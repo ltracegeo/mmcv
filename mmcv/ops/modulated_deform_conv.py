@@ -353,7 +353,7 @@ class ModulatedDeformConv2dPack(ModulatedDeformConv2d):
 
         if version is not None and version > 1:
             print_log(
-                f'ModulatedDeformConvPack {prefix.rstrip(".")} is upgraded to '
+                f"ModulatedDeformConvPack {prefix.rstrip('.')} is upgraded to "
                 'version 2.',
                 logger='current')
 

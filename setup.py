@@ -2,6 +2,7 @@ import glob
 import os
 import platform
 import re
+
 try:
     from packaging.version import parse as parse_version
 except ImportError:
@@ -9,24 +10,26 @@ except ImportError:
         from setuptools.extern.packaging.version import parse as parse_version
     except ImportError:
         try:
-            from pkg_resources import parse_version
+            from pkg_resources import parse_version  # type: ignore
         except ImportError:
             # A simple fallback for parse_version if packaging is not installed.
             # It might not handle all edge cases, but for most version strings it's fine.
             def parse_version(v):
                 return [
                     int(x) if x.isdigit() else x
-                    for x in re.split(r'(\d+)', v)
-                    if x
+                    for x in re.split(r'(\d+)', v) if x
                 ]
 
+
 try:
-    from importlib.metadata import distribution, PackageNotFoundError
+    from importlib.metadata import PackageNotFoundError, distribution
+
     def get_distribution(name):
         return distribution(name)
+
     DistributionNotFound = PackageNotFoundError
 except ImportError:
-    from pkg_resources import get_distribution, DistributionNotFound
+    from pkg_resources import get_distribution, DistributionNotFound  # type: ignore[import-untyped,no-redef]
 
 from setuptools import find_packages, setup
 
@@ -518,7 +521,7 @@ setup(
     author='MMCV Contributors',
     author_email='openmmlab@gmail.com',
     install_requires=install_requires,
-    extras_require={
+    extras_require={  # type: ignore
         'all': parse_requirements('requirements.txt'),
         'tests': parse_requirements('requirements/test.txt'),
         'build': parse_requirements('requirements/build.txt'),
@@ -526,5 +529,5 @@ setup(
     },
     python_requires='>=3.7',
     ext_modules=get_extensions(),
-    cmdclass=cmd_class,
+    cmdclass=cmd_class,  # type: ignore
     zip_safe=False)

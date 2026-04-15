@@ -45,7 +45,7 @@ def convert_video(in_file: str,
             options.append(f'-loglevel {v}')
         else:
             options.append(f'-{k} {v}')
-    cmd = f'ffmpeg -y {pre_options} -i {in_file} {" ".join(options)} ' \
+    cmd = f'ffmpeg -y {pre_options} -i {in_file} {' '.join(options)} ' \
           f'{out_file}'
     if print_cmd:
         print(cmd)

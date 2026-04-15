@@ -20,7 +20,7 @@ def parse_version_info(version_str: str, length: int = 4) -> tuple:
         try:
             from setuptools.extern.packaging.version import parse
         except ImportError:
-            from pkg_resources import parse_version as parse
+            from pkg_resources import parse_version as parse  # type: ignore
 
     version = parse(version_str)
     assert version.release, f'failed to parse version {version_str}'

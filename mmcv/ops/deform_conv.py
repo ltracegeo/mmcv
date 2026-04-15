@@ -332,8 +332,9 @@ class DeformConv2d(nn.Module):
         """
         # To fix an assert error in deform_conv_cuda.cpp:128
         # input image is smaller than kernel
-        input_pad = (x.size(2) < self.kernel_size[0]) or (x.size(3) <
-                                                          self.kernel_size[1])
+        input_pad = (x.size(2)
+                     < self.kernel_size[0]) or (x.size(3)
+                                                < self.kernel_size[1])
         if input_pad:
             pad_h = max(self.kernel_size[0] - x.size(2), 0)
             pad_w = max(self.kernel_size[1] - x.size(3), 0)
@@ -432,7 +433,7 @@ class DeformConv2dPack(DeformConv2d):
 
         if version is not None and version > 1:
             print_log(
-                f'DeformConv2dPack {prefix.rstrip(".")} is upgraded to '
+                f"DeformConv2dPack {prefix.rstrip('.')} is upgraded to "
                 'version 2.',
                 logger='current')
 
