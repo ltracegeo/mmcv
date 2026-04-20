@@ -56,7 +56,9 @@ try:
             shutil.which('cl') is None:
         print('cl.exe not found in PATH, disabling Ninja for Windows build')
         try:
-            cmd_class = {'build_ext': BuildExtension.with_options(use_ninja=False)}
+            cmd_class = {
+                'build_ext': BuildExtension.with_options(use_ninja=False)
+            }
         except AttributeError:
             cmd_class = {'build_ext': BuildExtension}
     else:

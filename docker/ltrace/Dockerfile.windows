@@ -49,4 +49,3 @@ RUN pip install wheel
 CMD call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64 && `
     where cl.exe && `
     pip wheel . --no-build-isolation --wheel-dir=./dist -v
-
