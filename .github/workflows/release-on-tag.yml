@@ -40,7 +40,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-wheel-linux
-          path: dist/*.whl
+          path: dist/mmcv*.whl
 
   build_windows_wheel:
     name: Build wheel on Windows
@@ -67,15 +67,16 @@ jobs:
           echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1\bin" >> $env:GITHUB_PATH
           echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1\libnvvp" >> $env:GITHUB_PATH
         shell: powershell
+      - name: Install MSVC
+        uses: ilammy/msvc-dev-cmd@v1
       - name: Install Python build dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements/build.txt
-          pip install wheel
+          pip install wheel psutil
       - name: Build wheel
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
           where cl.exe
           pip wheel . --no-build-isolation --wheel-dir=./dist -v
         shell: cmd
@@ -83,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-wheel-windows
-          path: dist/*.whl
+          path: dist/mmcv*.whl
 
   create_release:
     name: Create GitHub Release
@@ -100,5 +101,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/python-wheel-linux/*.whl
-            dist/python-wheel-windows/*.whl
+            dist/python-wheel-linux/mmcv*.whl
+            dist/python-wheel-windows/mmcv*.whl
