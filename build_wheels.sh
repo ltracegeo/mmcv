@@ -23,9 +23,10 @@ elif [ "$TARGET" == "windows" ]; then
     docker build -t mmcv-build-windows -f docker/ltrace/Dockerfile.windows .
 
     echo "--> Running windows build..."
-    echo "Run the following command on your Windows machine (using PowerShell):"
-    docker run --rm \
-        -v "\${PWD}:C:\workspace" \
+    # Use pwd -W to get the Windows path in Git Bash, and MSYS_NO_PATHCONV=1 to prevent mangling.
+    HOST_PATH=$(pwd -W 2>/dev/null || pwd)
+    MSYS_NO_PATHCONV=1 docker run --rm \
+        -v "${HOST_PATH}:C:\workspace" \
         mmcv-build-windows
 
 else

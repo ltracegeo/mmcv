@@ -2,6 +2,7 @@ import glob
 import os
 import platform
 import re
+import shutil
 
 try:
     from packaging.version import parse as parse_version
@@ -46,7 +47,20 @@ try:
     else:
         from torch.utils.cpp_extension import BuildExtension
         EXT_TYPE = 'pytorch'
-    cmd_class = {'build_ext': BuildExtension}
+
+    # In some Windows environments, the compiler 'cl.exe' is not in the PATH,
+    # but 'setuptools' (and its 'msvccompiler') can still find it.
+    # Ninja, however, requires 'cl.exe' to be in the PATH.
+    # Therefore, we disable Ninja on Windows if 'cl.exe' is not found in the PATH.
+    if EXT_TYPE == 'pytorch' and platform.system() == 'Windows' and \
+            shutil.which('cl') is None:
+        print('cl.exe not found in PATH, disabling Ninja for Windows build')
+        try:
+            cmd_class = {'build_ext': BuildExtension.with_options(use_ninja=False)}
+        except AttributeError:
+            cmd_class = {'build_ext': BuildExtension}
+    else:
+        cmd_class = {'build_ext': BuildExtension}
 except ModuleNotFoundError:
     cmd_class = {}
     print('Skip building ext ops due to the absence of torch.')

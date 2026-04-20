@@ -1,23 +1,52 @@
 # escape=`
-FROM mcr.microsoft.com/windows/servercore:ltsc2019
+ARG REPO=mcr.microsoft.com/dotnet/framework/runtime
+FROM $REPO:4.8-20230808-windowsservercore-ltsc2019
 
-# Install Chocolatey, Python, and VS 2019 Build Tools
+# Install Chocolatey and Python
 RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
 RUN choco install python --version=3.12.3 -y
-RUN choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" -y
 
-ENV PATH="C:\Python312;C:\Python312\Scripts;%PATH%"
+RUN echo Downloading CUDA 12.1... && `
+    C:\Windows\System32\curl.exe -fSLo "%TEMP%\cuda_installer.exe" "https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda_12.1.0_531.14_windows.exe" && `
+    echo Installing CUDA 12.1... && `
+    start /wait "" "%TEMP%\cuda_installer.exe" -s -n -f && `
+    del /F /Q "%TEMP%\cuda_installer.exe"
 
-SHELL ["cmd", "/S", "/C", "C:\\PROGRA~2\\MICROS~1\\2019\\BUILDT~1\\Common7\\Tools\\VsDevCmd.bat", "&&"]
+# Add CUDA to PATH and set system environment variables
+ENV CUDA_PATH="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1"
+ENV CUDA_PATH_V12_1="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1"
+RUN setx /M PATH "%PATH%;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1\libnvvp"
+
+
+# Download and install VS 2019 Build Tools directly to avoid Chocolatey failures.
+# We include the C++ Build Tools and the Windows 10 SDK (19041).
+RUN powershell -Command " `
+    $ErrorActionPreference = 'Stop'; `
+    $ProgressPreference = 'SilentlyContinue'; `
+    Invoke-WebRequest -Uri https://aka.ms/vs/16/release/vs_buildtools.exe -OutFile C:\vs_buildtools.exe; `
+    Start-Process -FilePath C:\vs_buildtools.exe -ArgumentList '--quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows10SDK.19041' -Wait; `
+    Remove-Item C:\vs_buildtools.exe"
+
+RUN setx /M PATH "%PATH%;C:\Python312;C:\Python312\Scripts"
+
+SHELL ["cmd", "/S", "/C"]
+
+# Use the established environment and don't let setuptools search for a compiler.
+ENV DISTUTILS_USE_SDK=1
 
 WORKDIR C:\workspace
 
 COPY requirements.txt .
-COPY requirements/ ./requirements
+COPY requirements/ requirements/
+
 RUN python -m pip install --upgrade pip
+ENV MAX_JOBS=4
 RUN pip install -r requirements.txt
-RUN pip install -r requirements/build.txt
 RUN pip install wheel
 
-# Note: Using default MSVC compiler.
-CMD ["pip", "wheel", ".", "--no-build-isolation", "--wheel-dir=./dist", "-v"]
+# Note: Using vcvarsall.bat to initialize the compiler environment directly before building.
+# Use x86_amd64 for the x86-hosted x64-targeted compiler.
+CMD call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64 && `
+    where cl.exe && `
+    pip wheel . --no-build-isolation --wheel-dir=./dist -v
+

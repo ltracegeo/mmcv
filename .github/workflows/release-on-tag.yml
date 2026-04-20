@@ -44,7 +44,12 @@ jobs:
 
   build_windows_wheel:
     name: Build wheel on Windows
-    runs-on: windows-2019
+    runs-on: windows-2022
+    env:
+      MAX_JOBS: 4
+      DISTUTILS_USE_SDK: 1
+      CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.1"
+      CUDA_PATH_V12_1: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.1"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -52,6 +57,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install CUDA 12.1
+        run: |
+          echo "Downloading CUDA 12.1..."
+          curl.exe -fSLo cuda_installer.exe https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda_12.1.0_531.14_windows.exe
+          echo "Installing CUDA 12.1..."
+          Start-Process -FilePath .\cuda_installer.exe -ArgumentList "-s", "-n", "-f" -Wait
+          del cuda_installer.exe
+          echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1\bin" >> $env:GITHUB_PATH
+          echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.1\libnvvp" >> $env:GITHUB_PATH
+        shell: powershell
       - name: Install Python build dependencies
         run: |
           python -m pip install --upgrade pip
@@ -60,7 +75,10 @@ jobs:
           pip install wheel
       - name: Build wheel
         run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+          where cl.exe
           pip wheel . --no-build-isolation --wheel-dir=./dist -v
+        shell: cmd
       - name: Store wheel
         uses: actions/upload-artifact@v4
         with:
